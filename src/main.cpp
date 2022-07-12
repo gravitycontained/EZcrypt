@@ -38,8 +38,6 @@ struct builder {
 				++this->additions;
 			}
 			auto name = file_path.get_file_name();
-
-			qpl::println("[", name, "] : ", file_path);
 			this->part_paths[name].push_back(file_path);
 		}
 		else {
@@ -107,19 +105,19 @@ struct builder {
 		str = qpl::encrypted_keep_size(str, key);
 		return str;
 	}
-	qpl::filesys::paths encrypt(const std::string& key, qpl::filesys::path destination_path = "", qpl::size split_size = qpl::size_max) {
+	qpl::filesys::paths encrypt(const std::string& key, std::string output_name, qpl::filesys::path destination_path = "", qpl::size split_size = qpl::size_max) {
 		if (!destination_path.empty() && destination_path.string().back() != '/') {
 			destination_path.append("/");
 		}
 
 		auto str = this->encrypted_string(key);
-		auto name = this->common_branch.get_name();
+		//auto name = this->common_branch.get_name();
 
-		qpl::filesys::path encrypted_path = qpl::to_string(destination_path, name, '.', this->keyword_string_enrypted);
+		qpl::filesys::path encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted);
 
 		qpl::size ctr = 0u;
 		while (encrypted_path.exists()) {
-			encrypted_path = qpl::to_string(destination_path, name, '.', this->keyword_string_enrypted, ctr);
+			encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted, ctr);
 			++ctr;
 		}
 		auto splits = qpl::split_string_every(str, split_size);
@@ -161,7 +159,8 @@ struct builder {
 				return a.second < b.second;
 			});
 
-			qpl::println("loading ", sorted_parts.size(), " part . . . ");
+			auto p = sorted_parts.size() == 1u ? "part" : "parts";
+			qpl::println("loading ", sorted_parts.size(), " ", p, " . . . ");
 			for (auto& file : sorted_parts) {
 				qpl::println(file.first.string());
 				string += file.first.read();
@@ -194,20 +193,21 @@ struct builder {
 			}
 
 			std::string branch_name;
-			auto split = qpl::split_string(common.get_name(), '.');
+			auto split = qpl::split_string(common.get_full_name(), '.');
 
-			branch_name = common.get_name();
+			branch_name = common.get_full_name();
 			if (split.size() && split.back() == this->keyword_string_enrypted) {
 				split.pop_back();
 				branch_name = qpl::to_string_format("a.b", split);
 			}
 			branch_name += qpl::to_string('.', this->keyword_string_derypted);
+			auto original_branch_name = branch_name;
 
 			qpl::filesys::path decrypted_path = qpl::to_string(destination_path, branch_name, "/");
 
 			qpl::size ctr = 0u;
 			while (decrypted_path.exists()) {
-				branch_name = qpl::to_string(branch_name, ctr);
+				branch_name = qpl::to_string(original_branch_name, ctr);
 				decrypted_path = qpl::to_string(destination_path, branch_name, "/");
 				++ctr;
 			}
@@ -232,6 +232,7 @@ struct builder {
 
 namespace data {
 	::builder builder;
+	bool use_encryption = true;
 }
 
 void move() {
@@ -242,15 +243,18 @@ qpl::size get_input_size(qpl::size total_size) {
 	qpl::size result = 0u;
 	constexpr auto check_count = [](qpl::size split_size, qpl::size total_size, std::string byte_string) {
 		auto file_count = (total_size - 1) / split_size + 1;
-		if (file_count > 1) {
+		if (file_count > 100) {
 			while (true) {
-				qpl::print("are you sure you want to create ", file_count, " files with ", byte_string, "? > (y/n)");
+				qpl::print("are you sure you want to create > ", file_count, " files? (y/n) > ");
 
 				auto input = qpl::get_input();
 				if (qpl::string_equals_ignore_case(input, "y")) {
 					return;
 				}
 				else if (qpl::string_equals_ignore_case(input, "n")) {
+					qpl::println();
+					qpl::println_repeat("-", 100);
+					qpl::println();
 					get_input_size(total_size);
 				}
 			}
@@ -273,9 +277,6 @@ qpl::size get_input_size(qpl::size total_size) {
 
 			auto amount = qpl::f64_cast(split[0u]);
 			auto type = split[1u];
-
-			qpl::println("amount = \"", amount, "\"");
-			qpl::println("type = \"", type, "\"");
 
 			if (qpl::string_equals_ignore_case(type, "b")) {
 				result = qpl::size_cast(amount);
@@ -321,6 +322,8 @@ qpl::size get_input_size(qpl::size total_size) {
 	return result;
 }
 
+
+
 int main(int argc, char** argv) try {
 
 	std::vector<std::string> args(argc - 1);
@@ -336,53 +339,66 @@ int main(int argc, char** argv) try {
 	else {
 
 		std::string encryption_way;
-		bool use_encryption = true;
+		data::use_encryption = true;
 
 		while (true) {
-			qpl::print("encrypt or decrypt\ne/d > ");
+			qpl::print("encrypt or decrypt? (e/d) > ");
 			encryption_way = qpl::get_input();
 			if (qpl::string_equals_ignore_case(encryption_way, "e")) {
-				use_encryption = true;
+				data::use_encryption = true;
 				break;
 			}
 			else if (qpl::string_equals_ignore_case(encryption_way, "d")) {
-				use_encryption = false;
+				data::use_encryption = false;
 				break;
 			}
 		}
 
-		qpl::clear_console();
+		qpl::println();
+		qpl::println_repeat("-", 100);
+		qpl::println();
 		qpl::print("input encryption key > ");
 		auto key = qpl::get_hidden_input();
 
-		if (use_encryption) {
-			qpl::println("encrypting . . . ");
-		}
-		else {
-			qpl::println("decrypting . . . ");
-		}
+		qpl::println();
+		qpl::println_repeat("-", 100);
+		qpl::println();
 
 		qpl::size split_size = qpl::size_max;
-		qpl::clear_console();
-		if (use_encryption) {
-
+		if (data::use_encryption) {
 			qpl::size file_size = 0u;
 			for (auto& arg : args) {
 				file_size += qpl::filesys::path(arg).file_size_recursive();
 			}
 			split_size = get_input_size(file_size);
-			
 		}
-		qpl::clear_console();
-		qpl::println("split_size = ", split_size);
-
 		qpl::clock clock;
 		for (auto &arg : args) {
 			data::builder.add(arg);
 		}
 
-		if (use_encryption) {
-			auto tree = data::builder.encrypt(key, "", split_size);
+		std::string encryption_name = "";
+		if (data::use_encryption) {
+			qpl::println();
+			qpl::println_repeat("-", 100);
+			qpl::println();
+
+			encryption_name = data::builder.common_branch.get_full_name();
+			qpl::print("output name? [enter to use \"", encryption_name, "\"] > ");
+			auto input = qpl::get_input();
+			if (!input.empty()) {
+				encryption_name = input;
+			}
+		}
+
+		if (data::use_encryption) {
+			qpl::print("encrypting . . . ");
+		}
+		else {
+			qpl::print("decrypting . . . ");
+		}
+		if (data::use_encryption) {
+			auto tree = data::builder.encrypt(key, encryption_name, "", split_size);
 			tree.print_tree();
 		}
 		else {
@@ -391,10 +407,54 @@ int main(int argc, char** argv) try {
 		}
 
 		qpl::println("done. took ", clock.elapsed_str());
-		qpl::system_pause();
+
+		qpl::println();
+		qpl::println_repeat("-", 100);
+		qpl::println();
+		qpl::filesys::paths p;
+		for (auto& i : args) {
+			p.push_back(i);
+		}
+		p.print_tree();
+		while (true) {
+			if (p.size() == 1u) {
+				qpl::print("\n ^ DELETE this original", data::use_encryption ? " " : " encrypted ", "file? [enter to ignore] (y/n) > ");
+			}
+			else {
+				qpl::print("\n ^ DELETE these original", data::use_encryption ? " " : " encrypted ", "files ? [enter to ignore](y / n) > ");
+			}
+
+
+			auto input = qpl::get_input();
+			if (input.empty()) {
+				break;
+			}
+			if (qpl::string_equals_ignore_case(input, "y")) {
+				for (auto& i : args) {
+					qpl::filesys::remove(i);
+				}
+				break;
+			}
+			else if (qpl::string_equals_ignore_case(input, "n")) {
+				break;
+			}
+		}
 	}
 }
 catch (std::exception& any) {
-	qpl::println("caught exception:\n", any.what());
+
+	if (!data::use_encryption) {
+		qpl::println();
+		qpl::println_repeat("-", 100);
+		qpl::println();
+		qpl::println("decryption FAILED. key was wrong.");
+		qpl::println();
+		qpl::println_repeat("-", 100);
+		qpl::println();
+	}
+	else {
+		qpl::println("caught exception:\n", any.what());
+	}
+
 	qpl::system_pause();
 }
