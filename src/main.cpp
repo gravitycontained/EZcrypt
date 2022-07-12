@@ -75,7 +75,7 @@ struct builder {
 			}
 		}
 	}
-	std::string encrypted_string(const std::string& key) {
+	std::string encrypted_string(const std::string& key, qpl::aes::mode mode) {
 		if (this->paths.empty()) {
 			return "";
 		}
@@ -102,16 +102,15 @@ struct builder {
 
 		this->clear();
 		auto str = save_state.get_finalized_string();
-		str = qpl::encrypted_keep_size(str, key);
+		str = qpl::encrypted_keep_size(str, key, mode);
 		return str;
 	}
-	qpl::filesys::paths encrypt(const std::string& key, std::string output_name, qpl::filesys::path destination_path = "", qpl::size split_size = qpl::size_max) {
+	qpl::filesys::paths encrypt(const std::string& key, std::string output_name, qpl::aes::mode mode, qpl::filesys::path destination_path = "", qpl::size split_size = qpl::size_max) {
 		if (!destination_path.empty() && destination_path.string().back() != '/') {
 			destination_path.append("/");
 		}
 
-		auto str = this->encrypted_string(key);
-		//auto name = this->common_branch.get_name();
+		auto str = this->encrypted_string(key, mode);
 
 		qpl::filesys::path encrypted_path = qpl::to_string(destination_path, output_name, '.', this->keyword_string_enrypted);
 
@@ -137,14 +136,14 @@ struct builder {
 
 		return this->paths;
 	}
-	qpl::filesys::paths decrypt(const std::string& key, qpl::filesys::path destination_path = "") const {
+	qpl::filesys::paths decrypt(const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path = "") const {
 		if (!destination_path.empty() && destination_path.string().back() != '/') {
 			destination_path.append("/");
 		}
 		qpl::filesys::paths tree;
 		for (auto& path : this->paths) {
 			auto string = path.read();
-			this->internal_decrypt(string, key, destination_path, tree);
+			this->internal_decrypt(string, key, mode, destination_path, tree);
 		}
 		for (auto& part : this->part_paths) {
 			std::string string;
@@ -165,15 +164,15 @@ struct builder {
 				qpl::println(file.first.string());
 				string += file.first.read();
 			}
-			this->internal_decrypt(string, key, destination_path, tree);
+			this->internal_decrypt(string, key, mode, destination_path, tree);
 			qpl::println("done");
 		}
 
 		return tree;
 	}
 	private:
-		void internal_decrypt(const std::string& string, const std::string& key, qpl::filesys::path destination_path, qpl::filesys::paths& tree) const {
-			auto str = qpl::decrypted_keep_size(string, key);
+		void internal_decrypt(const std::string& string, const std::string& key, qpl::aes::mode mode, qpl::filesys::path destination_path, qpl::filesys::paths& tree) const {
+			auto str = qpl::decrypted_keep_size(string, key, mode);
 
 			qpl::save_state load_state;
 			std::string s;
@@ -282,28 +281,28 @@ qpl::size get_input_size(qpl::size total_size) {
 				result = qpl::size_cast(amount);
 			}
 			else if (qpl::string_equals_ignore_case(type, "kb")) {
-				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 1.0));
-			}
-			else if (qpl::string_equals_ignore_case(type, "kib")) {
 				result = qpl::size_cast(amount * qpl::pow(10.0, bi * 1.0));
 			}
-			else if (qpl::string_equals_ignore_case(type, "mb")) {
-				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 2.0));
+			else if (qpl::string_equals_ignore_case(type, "kib")) {
+				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 1.0));
 			}
-			else if (qpl::string_equals_ignore_case(type, "mib")) {
+			else if (qpl::string_equals_ignore_case(type, "mb")) {
 				result = qpl::size_cast(amount * qpl::pow(10.0, bi * 2.0));
 			}
-			else if (qpl::string_equals_ignore_case(type, "gb")) {
-				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 3.0));
+			else if (qpl::string_equals_ignore_case(type, "mib")) {
+				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 2.0));
 			}
-			else if (qpl::string_equals_ignore_case(type, "gib")) {
+			else if (qpl::string_equals_ignore_case(type, "gb")) {
 				result = qpl::size_cast(amount * qpl::pow(10.0, bi * 3.0));
 			}
+			else if (qpl::string_equals_ignore_case(type, "gib")) {
+				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 3.0));
+			}
 			else if (qpl::string_equals_ignore_case(type, "tb")) {
-				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 4.0));
+				result = qpl::size_cast(amount * qpl::pow(10.0, bi * 4.0));
 			}
 			else if (qpl::string_equals_ignore_case(type, "tib")) {
-				result = qpl::size_cast(amount * qpl::pow(10.0, bi * 4.0));
+				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 4.0));
 			}
 			else {
 				get_input_size(total_size);
@@ -357,6 +356,28 @@ int main(int argc, char** argv) try {
 		qpl::println();
 		qpl::println_repeat("-", 100);
 		qpl::println();
+		qpl::aes::mode mode = qpl::aes::mode::_128;
+		while (true) {
+			qpl::print("which AES bit size to use? [enter to use 128] (128/192/256) > ");
+			auto input = qpl::get_input();
+
+			if (input.empty() || input == "128") {
+				mode = qpl::aes::mode::_128;
+				break;
+			}
+			else if (input == "192") {
+				mode = qpl::aes::mode::_192;
+				break;
+			}
+			else if (input == "256") {
+				mode = qpl::aes::mode::_256;
+				break;
+			}
+		}
+
+		qpl::println();
+		qpl::println_repeat("-", 100);
+		qpl::println();
 		qpl::print("input encryption key > ");
 		auto key = qpl::get_hidden_input();
 
@@ -398,11 +419,11 @@ int main(int argc, char** argv) try {
 			qpl::print("decrypting . . . ");
 		}
 		if (data::use_encryption) {
-			auto tree = data::builder.encrypt(key, encryption_name, "", split_size);
+			auto tree = data::builder.encrypt(key, encryption_name, mode, "", split_size);
 			tree.print_tree();
 		}
 		else {
-			auto tree = data::builder.decrypt(key);
+			auto tree = data::builder.decrypt(key, mode);
 			tree.print_tree();
 		}
 
