@@ -46,7 +46,6 @@ struct builder {
 		}
 		this->adding_parts = adding;
 
-
 		if (this->common_branch.empty()) {
 			this->common_branch = path;
 		}
@@ -78,11 +77,6 @@ struct builder {
 	std::string encrypted_string(const std::string& key, qpl::aes::mode mode) {
 		if (this->paths.empty()) {
 			return "";
-		}
-		if (this->additions == 1u) {
-			if (this->paths.front().is_directory()) {
-				this->common_branch.go_into(this->paths.front().get_name());
-			}
 		}
 		auto common_size = this->common_branch.branch_size() - 1;
 
@@ -217,6 +211,10 @@ struct builder {
 				decrypted_path = qpl::to_string(destination_path, branch_name, "/", decrypted_path.subpath(common.branch_size() - 1));
 
 				decrypted_path.ensure_branches_exist();
+				qpl::println("loaded_path = ", i);
+				qpl::println("branch_name = ", branch_name);
+				qpl::println("common = ", common);
+				qpl::println("decrypted_path = ", decrypted_path);
 
 				if (i.is_file()) {
 					std::string data_str;
@@ -356,6 +354,13 @@ int main(int argc, char** argv) try {
 		qpl::println();
 		qpl::println_repeat("-", 100);
 		qpl::println();
+		qpl::print("input encryption key > ");
+		auto key = qpl::get_hidden_input();
+
+
+		qpl::println();
+		qpl::println_repeat("-", 100);
+		qpl::println();
 		qpl::aes::mode mode = qpl::aes::mode::_128;
 		while (true) {
 			qpl::print("which AES bit size to use? [enter to use 128] (128/192/256) > ");
@@ -378,13 +383,6 @@ int main(int argc, char** argv) try {
 		qpl::println();
 		qpl::println_repeat("-", 100);
 		qpl::println();
-		qpl::print("input encryption key > ");
-		auto key = qpl::get_hidden_input();
-
-		qpl::println();
-		qpl::println_repeat("-", 100);
-		qpl::println();
-
 		qpl::size split_size = qpl::size_max;
 		if (data::use_encryption) {
 			qpl::size file_size = 0u;
@@ -418,16 +416,16 @@ int main(int argc, char** argv) try {
 		else {
 			qpl::print("decrypting . . . ");
 		}
+		qpl::filesys::paths tree;
 		if (data::use_encryption) {
-			auto tree = data::builder.encrypt(key, encryption_name, mode, "", split_size);
-			tree.print_tree();
+			tree = data::builder.encrypt(key, encryption_name, mode, "", split_size);
 		}
 		else {
-			auto tree = data::builder.decrypt(key, mode);
-			tree.print_tree();
+			tree = data::builder.decrypt(key, mode);
 		}
 
 		qpl::println("done. took ", clock.elapsed_str());
+		tree.print_tree();
 
 		qpl::println();
 		qpl::println_repeat("-", 100);
