@@ -91,7 +91,7 @@ qpl::size get_input_size(qpl::size total_size) {
 				result = qpl::size_cast(amount * qpl::pow(1024.0, by * 4.0));
 			}
 			else {
-				get_input_size(total_size);
+				return get_input_size(total_size);
 			}
 
 			check_count(result, total_size, qpl::to_string(amount, type));
