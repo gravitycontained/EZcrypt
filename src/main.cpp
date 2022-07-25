@@ -107,14 +107,6 @@ qpl::size get_input_size(qpl::size total_size) {
 	return result;
 }
 
-constexpr std::vector<int> f(int a) {
-	std::vector<int> result;
-	result.resize(a);
-	return result;
-}
-constexpr auto a = f(100).size();
-static_assert(a == 100);
-
 int main(int argc, char** argv) try {
 
 	std::vector<std::string> args(argc - 1);
@@ -257,7 +249,6 @@ int main(int argc, char** argv) try {
 catch (std::exception& any) {
 
 	if (!data::use_encryption) {
-		qpl::println("caught exception:\n", any.what());
 		qpl::println();
 		qpl::println_repeat("-", 100);
 		qpl::println();
