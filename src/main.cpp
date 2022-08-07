@@ -1,27 +1,8 @@
 #include <qpl/qpl.hpp>
 
-void gen_data() {
-
-	auto p = qpl::filesys::get_current_location();
-
-	for (qpl::u32 i = 0u; i < 10; ++i) {
-		auto name = qpl::get_random_lowercase_uppercase_number_string(10);
-		auto extension = qpl::get_random_lowercase_string(3);
-		auto new_name = qpl::to_string(name, ".", extension);
-		auto path = p.make_file(new_name);
-		path.write(qpl::get_random_string(20));
-	}
-}
-
-
-
 namespace data {
 	qpl::file_encrypter builder;
 	bool use_encryption = true;
-}
-
-void move() {
-	qpl::filesys::copy_overwrite("C:/Users/Zugriffspunkt/source/repos/FileEncrypt/x64/Release/QPL.exe", "C:/Users/Zugriffspunkt/source/repos/FileEncrypt/QPL/QPL.exe");
 }
 
 qpl::size get_input_size(qpl::size total_size) {
@@ -226,7 +207,7 @@ int main(int argc, char** argv) try {
 				qpl::print("\n ^ DELETE this original", data::use_encryption ? " " : " encrypted ", "file? [enter to ignore] (y/n) > ");
 			}
 			else {
-				qpl::print("\n ^ DELETE these original", data::use_encryption ? " " : " encrypted ", "files ? [enter to ignore](y / n) > ");
+				qpl::print("\n ^ DELETE these original", data::use_encryption ? " " : " encrypted ", "files ? [enter to ignore] (y / n) > ");
 			}
 
 
