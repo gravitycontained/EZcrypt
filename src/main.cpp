@@ -5,6 +5,10 @@ namespace data {
 	bool use_encryption = true;
 }
 
+enum class cipher_mode {
+	quick, normal, save, none
+};
+
 qpl::size get_input_size(qpl::size total_size) {
 	qpl::size result = 0u;
 	constexpr auto check_count = [](qpl::size split_size, qpl::size total_size, std::string byte_string) {
@@ -128,23 +132,35 @@ int main(int argc, char** argv) try {
 		qpl::println();
 		qpl::println_repeat("-", 100);
 		qpl::println();
-		qpl::aes::mode mode = qpl::aes::mode::_128;
+
+		cipher_mode cipher_mode = cipher_mode::none;
+		qpl::aes::mode aes_mode = qpl::aes::mode::_128;
 		while (true) {
-			qpl::print("which AES bit size to use? [enter to use 128] (128/192/256) > ");
+			qpl::print("cipher mode (AES / QPL): [enter to use AES 128](128 / 192 / 256) (QUICK / NORMAL / SAVE) > ");
 			auto input = qpl::get_input();
 
 			if (input.empty() || input == "128") {
-				mode = qpl::aes::mode::_128;
-				break;
+				aes_mode = qpl::aes::mode::_128;
 			}
 			else if (input == "192") {
-				mode = qpl::aes::mode::_192;
-				break;
+				aes_mode = qpl::aes::mode::_192;
 			}
 			else if (input == "256") {
-				mode = qpl::aes::mode::_256;
-				break;
+				aes_mode = qpl::aes::mode::_256;
 			}
+			else if (qpl::string_equals_ignore_case(input, "QUICK")) {
+				cipher_mode = cipher_mode::quick;
+			}
+			else if (qpl::string_equals_ignore_case(input, "NORMAL")) {
+				cipher_mode = cipher_mode::normal;
+			}
+			else if (qpl::string_equals_ignore_case(input, "SAVE")) {
+				cipher_mode = cipher_mode::save;
+			}
+			else {
+				continue;
+			}
+			break;
 		}
 
 		qpl::println();
@@ -185,10 +201,40 @@ int main(int argc, char** argv) try {
 		}
 		qpl::filesys::paths tree;
 		if (data::use_encryption) {
-			tree = data::builder.encrypt(key, encryption_name, mode, "", split_size);
+			if (cipher_mode == cipher_mode::none) {
+				tree = data::builder.encrypt(key, encryption_name, aes_mode, "", split_size);
+			}
+			else {
+				switch (cipher_mode) {
+				case cipher_mode::quick:
+					tree = data::builder.encrypt(key, encryption_name, qpl::encrypt512_quick, "", split_size);
+					break;
+				case cipher_mode::normal:
+					tree = data::builder.encrypt(key, encryption_name, qpl::encrypt512, "", split_size);
+					break;
+				case cipher_mode::save:
+					tree = data::builder.encrypt(key, encryption_name, qpl::encrypt512_save, "", split_size);
+					break;
+				}
+			}
 		}
 		else {
-			tree = data::builder.decrypt(key, mode);
+			if (cipher_mode == cipher_mode::none) {
+				tree = data::builder.decrypt(key, aes_mode);
+			}
+			else {
+				switch (cipher_mode) {
+				case cipher_mode::quick:
+					tree = data::builder.decrypt(key, qpl::decrypt512_quick);
+					break;
+				case cipher_mode::normal:
+					tree = data::builder.decrypt(key, qpl::decrypt512);
+					break;
+				case cipher_mode::save:
+					tree = data::builder.decrypt(key, qpl::decrypt512_save);
+					break;
+				}
+			}
 		}
 
 		qpl::println("done. took ", clock.elapsed_str());
