@@ -6,7 +6,7 @@ namespace data {
 }
 
 enum class cipher_mode {
-	quick, normal, save, none
+	ultra_quick, quick, normal, save, none
 };
 
 qpl::size get_input_size(qpl::size total_size) {
@@ -136,7 +136,7 @@ int main(int argc, char** argv) try {
 		cipher_mode cipher_mode = cipher_mode::none;
 		qpl::aes::mode aes_mode = qpl::aes::mode::_128;
 		while (true) {
-			qpl::print("cipher mode (AES / QPL): [enter to use AES 128](128 / 192 / 256) (QUICK / NORMAL / SAVE) > ");
+			qpl::print("cipher mode (AES / QPL):\n128 / 192 / 256 --- ULTRA / QUICK / NORMAL / SAVE\n[enter to use AES 128]> ");
 			auto input = qpl::get_input();
 
 			if (input.empty() || input == "128") {
@@ -147,6 +147,9 @@ int main(int argc, char** argv) try {
 			}
 			else if (input == "256") {
 				aes_mode = qpl::aes::mode::_256;
+			}
+			else if (qpl::string_equals_ignore_case(input, "ULTRA")) {
+				cipher_mode = cipher_mode::ultra_quick;
 			}
 			else if (qpl::string_equals_ignore_case(input, "QUICK")) {
 				cipher_mode = cipher_mode::quick;
@@ -206,6 +209,9 @@ int main(int argc, char** argv) try {
 			}
 			else {
 				switch (cipher_mode) {
+				case cipher_mode::ultra_quick:
+					tree = data::builder.encrypt(key, encryption_name, qpl::encrypt512_ultra_quick, "", split_size);
+					break;
 				case cipher_mode::quick:
 					tree = data::builder.encrypt(key, encryption_name, qpl::encrypt512_quick, "", split_size);
 					break;
@@ -224,6 +230,9 @@ int main(int argc, char** argv) try {
 			}
 			else {
 				switch (cipher_mode) {
+				case cipher_mode::ultra_quick:
+					tree = data::builder.decrypt(key, qpl::decrypt512_ultra_quick);
+					break;
 				case cipher_mode::quick:
 					tree = data::builder.decrypt(key, qpl::decrypt512_quick);
 					break;
