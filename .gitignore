@@ -4,3 +4,6 @@ Release/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+resource.h
+*.rc
+*.APS
