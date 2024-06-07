@@ -94,6 +94,8 @@ qpl::size get_input_size(qpl::size total_size) {
 
 int main(int argc, char** argv) try {
 
+	qpl::winsys::enable_utf16();
+
 	std::vector<std::string> args(argc - 1);
 	for (qpl::i32 i = 0; i < argc - 1; ++i) {
 		args[i] = argv[i + 1];
