@@ -95,7 +95,7 @@ qpl::size get_input_size(qpl::size total_size) {
 int main(int argc, char** argv) try {
 
 	qpl::winsys::enable_utf16();
-
+	
 	std::vector<std::string> args(argc - 1);
 	for (qpl::i32 i = 0; i < argc - 1; ++i) {
 		args[i] = argv[i + 1];
@@ -150,19 +150,19 @@ int main(int argc, char** argv) try {
 			else if (input == "256") {
 				aes_mode = qpl::aes::mode::_256;
 			}
-			else if (qpl::string_equals_ignore_case(input, "ULTRA FAST")) {
+			else if (qpl::string_equals_ignore_case(input, "ULTRA FAST") || qpl::string_equals_ignore_case(input, "u")) {
 				cipher_mode = cipher_mode::ultra_fast;
 			}
-			else if (qpl::string_equals_ignore_case(input, "FAST")) {
+			else if (qpl::string_equals_ignore_case(input, "FAST") || qpl::string_equals_ignore_case(input, "f")) {
 				cipher_mode = cipher_mode::fast;
 			}
-			else if (qpl::string_equals_ignore_case(input, "MID")) {
+			else if (qpl::string_equals_ignore_case(input, "MID") || qpl::string_equals_ignore_case(input, "m")) {
 				cipher_mode = cipher_mode::mid;
 			}
-			else if (qpl::string_equals_ignore_case(input, "SECURE")) {
+			else if (qpl::string_equals_ignore_case(input, "SECURE") || qpl::string_equals_ignore_case(input, "s")) {
 				cipher_mode = cipher_mode::secure;
 			}
-			else if (qpl::string_equals_ignore_case(input, "VERY SECURE")) {
+			else if (qpl::string_equals_ignore_case(input, "VERY SECURE") || qpl::string_equals_ignore_case(input, "v")) {
 				cipher_mode = cipher_mode::very_secure;
 			}
 			else {
